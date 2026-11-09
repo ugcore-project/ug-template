@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The tag MUST match the manifest version, so the archive and the version check agree.
+      - name: Check the version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n "s/^version '\([0-9.]*\)'$/\1/p" fxmanifest.lua)
+
+          if [ "v${version}" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match the manifest version ${version}."
+            exit 1
+          fi
+
+      # Uses the Node.js preinstalled on the runner. Vite needs 20.19 or newer.
+      - name: Build the page
+        working-directory: web
+        run: |
+          node --version
+          npm ci
+          npm run build
+          npm run budget
+
+      # Only what the server runs: no web sources, tests or CI files.
+      - name: Package
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          out="$RUNNER_TEMP/ug-template"
+          mkdir -p "$out/web"
+          cp -r fxmanifest.lua config.example.lua LICENSE README.md shared client server locales "$out/"
+          cp -r web/dist "$out/web/dist"
+          (cd "$RUNNER_TEMP" && zip -qr "ug-template-${TAG}.zip" ug-template)
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" "$RUNNER_TEMP/ug-template-${TAG}.zip" --title "$TAG" --generate-notes

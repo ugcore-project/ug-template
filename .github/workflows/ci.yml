@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Same LuaLS version as the VS Code extension used locally.
+  LUALS_VERSION: 3.19.1
+  # overextended/fivem-lls-addon: FiveM natives and runtime definitions. Pinned, so upstream changes cannot break the check.
+  FIVEM_LLS_ADDON_REF: 569364a2cceefef160c776e350a3b18407d191cf
+  # ug-core and ug-lib: types for LuaLS and the real shared code the tests run against.
+  # Pin both to a commit SHA once they are published.
+  UG_CORE_REF: dev
+  UG_LIB_REF: dev
+
+jobs:
+  luals:
+    name: LuaLS check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch ug-core and ug-lib
+        run: |
+          git init -q "$RUNNER_TEMP/ug-core"
+          git -C "$RUNNER_TEMP/ug-core" fetch -q --depth 1 https://github.com/ugcore-project/ug-core "$UG_CORE_REF"
+          git -C "$RUNNER_TEMP/ug-core" checkout -q FETCH_HEAD
+          git init -q "$RUNNER_TEMP/ug-lib"
+          git -C "$RUNNER_TEMP/ug-lib" fetch -q --depth 1 https://github.com/ugcore-project/ug-lib "$UG_LIB_REF"
+          git -C "$RUNNER_TEMP/ug-lib" checkout -q FETCH_HEAD
+
+      - name: Install lua-language-server
+        run: |
+          mkdir -p "$RUNNER_TEMP/luals"
+          curl -fsSL "https://github.com/LuaLS/lua-language-server/releases/download/${LUALS_VERSION}/lua-language-server-${LUALS_VERSION}-linux-x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP/luals"
+
+      - name: Fetch FiveM natives
+        run: |
+          git init -q "$RUNNER_TEMP/fivem-lls-addon"
+          git -C "$RUNNER_TEMP/fivem-lls-addon" fetch -q --depth 1 https://github.com/overextended/fivem-lls-addon "$FIVEM_LLS_ADDON_REF"
+          git -C "$RUNNER_TEMP/fivem-lls-addon" checkout -q FETCH_HEAD
+
+      # .luarc.json MUST NOT set workspace.library, so CI adds the natives, ug-core and ug-lib in its own config.
+      - name: Write CI config
+        run: |
+          addon="$RUNNER_TEMP/fivem-lls-addon"
+          jq --arg library "$addon/library" --arg plugin "$addon/plugin.lua" --arg core "$RUNNER_TEMP/ug-core" --arg lib "$RUNNER_TEMP/ug-lib" \
+            '. + {
+              "workspace.library": [($library + "/runtime"), ($library + "/natives/CFX-NATIVE"), ($library + "/natives/GTAV"), $core, $lib],
+              "runtime.plugin": $plugin
+            }' .luarc.json > "$RUNNER_TEMP/luarc.ci.json"
+
+      - name: Check
+        run: |
+          "$RUNNER_TEMP/luals/bin/lua-language-server" --check . --checklevel=Information \
+            --configpath="$RUNNER_TEMP/luarc.ci.json" --check_out_path="$RUNNER_TEMP/check.json" \
+            | tr '\r' '\n' | tee "$RUNNER_TEMP/check.log" || true
+
+          # Decided by the summary line, so problems print whatever the exit code of LuaLS is.
+          if ! grep -q 'no problems found' "$RUNNER_TEMP/check.log"; then
+            cat "$RUNNER_TEMP/check.json"
+            exit 1
+          fi
+
+  tests:
+    name: Runtime tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch ug-core and ug-lib
+        run: |
+          git init -q "$RUNNER_TEMP/ug-core"
+          git -C "$RUNNER_TEMP/ug-core" fetch -q --depth 1 https://github.com/ugcore-project/ug-core "$UG_CORE_REF"
+          git -C "$RUNNER_TEMP/ug-core" checkout -q FETCH_HEAD
+          git init -q "$RUNNER_TEMP/ug-lib"
+          git -C "$RUNNER_TEMP/ug-lib" fetch -q --depth 1 https://github.com/ugcore-project/ug-lib "$UG_LIB_REF"
+          git -C "$RUNNER_TEMP/ug-lib" checkout -q FETCH_HEAD
+
+      - name: Install Lua 5.4
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q lua5.4
+
+      - name: Run suites
+        run: |
+          export UG_CORE="$RUNNER_TEMP/ug-core" UG_LIB="$RUNNER_TEMP/ug-lib"
+          status=0
+
+          for suite in tests/*.lua; do
+            if [ "$suite" = tests/helpers.lua ]; then
+              continue
+            fi
+
+            echo "::group::$suite"
+
+            if ! lua5.4 "$suite"; then
+              echo "::error file=$suite::$suite failed"
+              status=1
+            fi
+
+            echo "::endgroup::"
+          done
+
+          exit $status
+
+  repository:
+    name: Manifest and headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Lua 5.4
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q lua5.4
+
+      - name: Check
+        run: lua5.4 .github/scripts/check-repository.lua
+
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Uses the Node.js preinstalled on the runner. Vite needs 20.19 or newer.
+      - name: Node.js version
+        run: node --version
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle budget
+        run: npm run budget
