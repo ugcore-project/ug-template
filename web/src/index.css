@@ -1,0 +1,175 @@
+/* Self-hosted: the page MUST NOT depend on an external request to render text. */
+@import "@fontsource-variable/inter";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Theme tokens as HSL triplets: FiveM's CEF does not reliably support the
+  newer color functions of Tailwind v4. `.dark` swaps the whole set, and
+  src/lib/theme.ts applies theme overrides at runtime.
+*/
+@layer base {
+  :root {
+    --ug-background: 0 0% 100%;
+    --ug-foreground: 222.2 84% 4.9%;
+
+    --ug-card: 0 0% 100%;
+    --ug-card-foreground: 222.2 84% 4.9%;
+
+    --ug-popover: 0 0% 100%;
+    --ug-popover-foreground: 222.2 84% 4.9%;
+
+    --ug-primary: 221.2 83.2% 53.3%;
+    --ug-primary-foreground: 210 40% 98%;
+
+    --ug-secondary: 210 40% 96.1%;
+    --ug-secondary-foreground: 222.2 47.4% 11.2%;
+
+    --ug-muted: 210 40% 96.1%;
+    --ug-muted-foreground: 215.4 16.3% 46.9%;
+
+    --ug-accent: 210 40% 96.1%;
+    --ug-accent-foreground: 222.2 47.4% 11.2%;
+
+    --ug-destructive: 0 84.2% 60.2%;
+    --ug-destructive-foreground: 210 40% 98%;
+
+    --ug-success: 142 71% 45%;
+    --ug-success-foreground: 210 40% 98%;
+
+    --ug-warning: 38 92% 50%;
+    --ug-warning-foreground: 222.2 47.4% 11.2%;
+
+    --ug-border: 214.3 31.8% 91.4%;
+    --ug-input: 214.3 31.8% 91.4%;
+    --ug-ring: 221.2 83.2% 53.3%;
+
+    --ug-radius: 0.75rem;
+
+    --ug-font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .dark {
+    --ug-background: 222.2 84% 4.9%;
+    --ug-foreground: 210 40% 98%;
+
+    --ug-card: 222.2 84% 4.9%;
+    --ug-card-foreground: 210 40% 98%;
+
+    --ug-popover: 222.2 84% 4.9%;
+    --ug-popover-foreground: 210 40% 98%;
+
+    --ug-primary: 217.2 91.2% 59.8%;
+    --ug-primary-foreground: 222.2 47.4% 11.2%;
+
+    --ug-secondary: 217.2 32.6% 17.5%;
+    --ug-secondary-foreground: 210 40% 98%;
+
+    --ug-muted: 217.2 32.6% 17.5%;
+    --ug-muted-foreground: 215 20.2% 65.1%;
+
+    --ug-accent: 217.2 32.6% 17.5%;
+    --ug-accent-foreground: 210 40% 98%;
+
+    --ug-destructive: 0 62.8% 30.6%;
+    --ug-destructive-foreground: 210 40% 98%;
+
+    --ug-success: 142 71% 45%;
+    --ug-success-foreground: 144 61% 10%;
+
+    --ug-warning: 38 92% 50%;
+    --ug-warning-foreground: 20 91% 10%;
+
+    --ug-border: 217.2 32.6% 17.5%;
+    --ug-input: 217.2 32.6% 17.5%;
+    --ug-ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  /* Global defaults only. Component styling lives in the components. */
+  * {
+    @apply border-border;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Thin scrollbars. NUI is always Chromium, so webkit-only is enough. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--ug-border));
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--ug-muted-foreground) / 0.5);
+}
+
+/* UI scale from theme.scale: every rem-based size follows the root font size. */
+html {
+  font-size: calc(16px * var(--ug-scale, 1));
+}
+
+/* The page is an overlay on the game: only panels paint. */
+html,
+body {
+  background: transparent;
+}
+
+/* Panels and cards slide in when they mount. */
+@keyframes ug-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ug-enter {
+  animation: ug-enter 220ms ease-out both;
+}
+
+/* Pulses when a value changes: remount the element with a new key. */
+@keyframes ug-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.12);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.ug-pop {
+  animation: ug-pop 260ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

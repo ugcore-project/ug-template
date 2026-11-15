@@ -1,0 +1,26 @@
+{
+  "prompt": "Abrir {label}",
+  "keybind": {
+    "interact": "Template: abrir o painel"
+  },
+  "page": {
+    "reward": "Recompensa",
+    "claim": "Receber",
+    "claimed": "Recebeste {amount}.",
+    "close": "Fechar",
+    "ready": "Pronto a receber",
+    "wait": "Volta daqui a {time}",
+    "error": {
+      "invalid_args": "Isso não funcionou.",
+      "not_found": "Isso não funcionou.",
+      "not_loaded": "Carrega primeiro uma personagem.",
+      "rate_limited": "Ainda não.",
+      "no_permission": "Não podes fazer isso aqui.",
+      "insufficient_funds": "Dinheiro insuficiente.",
+      "insufficient_items": "Não tens os itens.",
+      "cannot_carry": "Não consegues carregar isso.",
+      "timeout": "O servidor não respondeu. Tenta outra vez.",
+      "internal_error": "Algo correu mal. Tenta outra vez."
+    }
+  }
+}

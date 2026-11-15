@@ -1,0 +1,18 @@
+# Owner config, generated from server/config.default.lua on the first start
+/config.lua
+
+# Archives
+*.zip
+*.tar.gz
+
+# Editors
+.idea
+.DS_Store
+
+# Web app: dependencies and build output. CI builds web/dist for releases.
+/web/node_modules/
+/web/dist/
+/web/showcase-dist/
+/web/*.local
+/web/coverage/
+*.log

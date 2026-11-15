@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "sumneko.lua",
+        "overextended.cfxlua-vscode",
+        "ugcore-project.ugcore-extension",
+        "editorconfig.editorconfig"
+    ]
+}

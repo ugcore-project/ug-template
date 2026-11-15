@@ -1,0 +1,26 @@
+{
+  "prompt": "Open {label}",
+  "keybind": {
+    "interact": "Template: open the panel"
+  },
+  "page": {
+    "reward": "Reward",
+    "claim": "Claim",
+    "claimed": "Claimed {amount}.",
+    "close": "Close",
+    "ready": "Ready to claim",
+    "wait": "Come back in {time}",
+    "error": {
+      "invalid_args": "That did not work.",
+      "not_found": "That did not work.",
+      "not_loaded": "Load a character first.",
+      "rate_limited": "Not yet.",
+      "no_permission": "You can't do that here.",
+      "insufficient_funds": "Not enough money.",
+      "insufficient_items": "You don't have the items.",
+      "cannot_carry": "You can't carry that.",
+      "timeout": "The server did not answer. Try again.",
+      "internal_error": "Something went wrong. Try again."
+    }
+  }
+}

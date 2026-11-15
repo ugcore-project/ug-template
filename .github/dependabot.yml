@@ -1,0 +1,17 @@
+# Weekly npm updates for the page, grouped in one pull request.
+# The prefix keeps titles valid for pr-title.yml: chore(deps), never build(deps-dev).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    target-branch: dev
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      prefix-development: chore(deps)
+    groups:
+      web:
+        patterns:
+          - '*'
